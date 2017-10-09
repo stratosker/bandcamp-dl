@@ -15,7 +15,7 @@ def main(argv):
 		os.chdir(folderName)
 	response = urllib2.urlopen(sys.argv[1])
 	sourceCode = response.read()
-	print "Downloading "+sys.argv[1] 
+	print("Downloading "+sys.argv[1]) 
 	fileName = 0
 	it = 0
 		
@@ -29,8 +29,8 @@ def main(argv):
 				it2 = it2+1
 			#r = requests.get("http://"+downUrl, allow_redirects=False)
 			#req = urllib2.Request(downUrl, datagen, headers)
-			#print r.headers['Location']
-			print "downloading track..."
+			#print(r.headers['Location'])
+			print("downloading track...")
 			#urllib.urlretrieve (r.headers['Location'], str(fileName)+".mp3")
 			urllib.urlretrieve ("http://"+downUrl, str(fileName)+".mp3")
 		it=it+1
@@ -39,7 +39,7 @@ def main(argv):
 		if filename.endswith(".mp3"):
 			audiofile = eyed3.load(filename)
 			if audiofile.tag is None:
-				print "not able to extract track info"
+				print("not able to extract track info")
 				continue
 			name = audiofile.tag.title.encode('utf-8')
 			if (len(name)>=248):
@@ -51,7 +51,7 @@ def main(argv):
 			else:
 				os.rename(filename, str(audiofile.tag.track_num[0])+" "+name+".mp3")
 	
-	print "Downloading Complete :)"
+	print("Downloading Complete :)")
 	
 
 if __name__ == "__main__":
