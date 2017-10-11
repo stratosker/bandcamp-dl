@@ -1,7 +1,7 @@
 import sys
 import urllib
 import urllib2
-import requests
+#import requests
 import os
 import eyed3
 
