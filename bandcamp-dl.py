@@ -1,10 +1,10 @@
 import sys
-import urllib
-import urllib2
+import urllib.request
 #import requests
 import os
 import eyed3
 
+#Usage
 #python bandcamp-dl.py [album/track link]
 
 def main(argv): 
@@ -29,10 +29,10 @@ def main(argv):
 				downUrl+=str(sourceCode[it2])
 				it2 = it2+1
 			#r = requests.get("http://"+downUrl, allow_redirects=False)
-			#req = urllib2.Request(downUrl, datagen, headers)
+			#req = urllib.request.Request(downUrl, datagen, headers)
 			#print (r.headers['Location'])
 			print("downloading track...")
-			#urllib.urlretrieve (r.headers['Location'], str(fileName)+".mp3")
+			#urllib.request.urlretrieve(r.headers['Location'], str(fileName)+".mp3")
 			urllib.request.urlretrieve ("http://"+downUrl, str(fileName)+".mp3")
 		it=it+1
 	
