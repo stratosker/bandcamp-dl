@@ -19,7 +19,6 @@ def main(argv):
 	print(("Downloading "+sys.argv[1])) 
 	fileName = 0
 	it = 0
-	
 	sourceCode = sourceCode.decode("utf8")
 
 	foundInfo = False
