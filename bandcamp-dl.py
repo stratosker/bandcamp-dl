@@ -3,6 +3,7 @@ import urllib.request
 #import requests
 import os
 import eyed3
+import re
 
 #Usage
 #python bandcamp-dl.py [album/track link]
@@ -20,6 +21,23 @@ def main(argv):
 	it = 0
 	
 	sourceCode = sourceCode.decode("utf8")
+
+	foundInfo = False
+	searchObj = re.search( r'album_title(.*): "(.*)"', sourceCode, re.M|re.I)
+	if searchObj:
+		album = searchObj.group(2)
+		foundInfo = True
+	else:
+		#print("no album")
+		foundInfo = False
+	searchObj = re.search( r'artist: "(.*)"', sourceCode, re.M|re.I)
+	if searchObj:
+		artist = searchObj.group(1)
+		foundInfo = True
+	else:
+		#print("no artist")
+		foundInfo = False
+
 	for x in sourceCode:
 		if((x=="t" or x=="p") and sourceCode[it+1]=="4" and sourceCode[it+2]=="." and sourceCode[it+3]=="b" and sourceCode[it+4]=="c" and sourceCode[it+5]=="b"):
 			it2 = it
@@ -34,25 +52,58 @@ def main(argv):
 			print("downloading track...")
 			#urllib.request.urlretrieve(r.headers['Location'], str(fileName)+".mp3")
 			urllib.request.urlretrieve ("http://"+downUrl, str(fileName)+".mp3")
-		it=it+1
-	
-	for filename in os.listdir("."):
-		if filename.endswith(".mp3"):
+			filename = str(fileName)+".mp3"
+			trackNum  = filename.split('.mp3')[0]
 			audiofile = eyed3.load(filename)
 			if audiofile.tag is None:
-				print("not able to extract track info")
-				continue
-			name = audiofile.tag.title
-			if (len(name)>=248):
-				name = name[:-(len(name)-247)]
-			if "/" in name:
-				name = name.replace("/", "-")
-			if(len(str(audiofile.tag.track_num[0]))==1):	
-				os.rename(filename, "0"+str(audiofile.tag.track_num[0])+" "+name+".mp3")
-			else:
-				os.rename(filename, str(audiofile.tag.track_num[0])+" "+name+".mp3")
+				audiofile.tag = eyed3.id3.Tag()
+				
+				searchObj = re.search(re.escape(trackNum) +r'\. (.*)', sourceCode, re.M|re.I)
+				if searchObj:
+					track = searchObj.group(1)
+					track = track.replace("&#39;", "'")
+					foundInfo = True
+				else:
+					#print("no track")
+					foundInfo = False
+				#print("Finding track info...")
+				# searchObj = re.search(r'{"play_count"(.*)"title":"(.*)"(.*)"track_num":(.*),(.*)"mp3-128":"https://'+re.escape(downUrl)+r'"', sourceCode, re.M|re.I)
+				# if searchObj:
+				# 	track  = searchObj.group(2).split('","')[0]
+				# 	trackNum =  searchObj.group(4).split(',"track_id"')[0]
+				# 	#print(trackNum+" "+ track)
+				# else:
+				# 	print("no track")
+				# 	foundInfo = 0
+				if foundInfo:
+					audiofile.tag.artist = artist
+					audiofile.tag.album = album
+					audiofile.tag.title = track
+					audiofile.tag.track_num = (trackNum, None)
+					audiofile.tag.save()
+				#else:
+					#continue
+			
+			#print("Renamening file...")	
+			if(foundInfo):
+				name = audiofile.tag.title
+				if (len(name)>=248):
+					name = name[:-(len(name)-247)]
+				if "/" in name:
+					name = name.replace("/", "-")
+				if(len(str(audiofile.tag.track_num[0]))==1):	
+					os.rename(filename, "0"+str(audiofile.tag.track_num[0])+" "+name+".mp3")
+				else:
+					os.rename(filename, str(audiofile.tag.track_num[0])+" "+name+".mp3")
+		it=it+1
+
+	searchObj = re.search( r'<link rel="image_src" href="(.*)">', sourceCode, re.M|re.I)
+	if searchObj:
+		cover = searchObj.group(1)
+		urllib.request.urlretrieve (cover, "cover.jpg")
 	
-	print("Downloading Complete :)")
+
+	print("Download Complete :)")
 	
 
 if __name__ == "__main__":
