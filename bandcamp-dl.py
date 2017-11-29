@@ -25,6 +25,7 @@ def main(argv):
 	searchObj = re.search( r'album_title(.*): "(.*)"', sourceCode, re.M|re.I)
 	if searchObj:
 		album = searchObj.group(2)
+		album = album.replace('\"','"')
 		foundInfo = True
 	else:
 		#print("no album")
@@ -32,6 +33,7 @@ def main(argv):
 	searchObj = re.search( r'artist: "(.*)"', sourceCode, re.M|re.I)
 	if searchObj:
 		artist = searchObj.group(1)
+		artist = artist.replace('\"','"')
 		foundInfo = True
 	else:
 		#print("no artist")
@@ -61,6 +63,10 @@ def main(argv):
 				if searchObj:
 					track = searchObj.group(1)
 					track = track.replace("&#39;", "'")
+					track = track.replace("&quot;", '"')
+					track = track.replace("&lt;", '<')
+					track = track.replace("&gt;", '>')
+					track = track.replace("&amp;", '&')
 					foundInfo = True
 				else:
 					#print("no track")
