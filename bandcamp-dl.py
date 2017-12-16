@@ -19,25 +19,30 @@ def main(argv):
 	print(("Downloading "+sys.argv[1])) 
 	fileName = 0
 	it = 0
+	
 	sourceCode = sourceCode.decode("utf8")
 
-	foundInfo = False
+	foundTrackInfo = True
+	foundArtistInfo = False
+	foundAlbumInfo = False
 	searchObj = re.search( r'album_title(.*): "(.*)"', sourceCode, re.M|re.I)
 	if searchObj:
 		album = searchObj.group(2)
 		album = album.replace('\"','"')
-		foundInfo = True
+		#print(album)
+		foundAlbumInfo = True
 	else:
 		#print("no album")
-		foundInfo = False
+		foundAlbumInfo = False
 	searchObj = re.search( r'artist: "(.*)"', sourceCode, re.M|re.I)
 	if searchObj:
 		artist = searchObj.group(1)
 		artist = artist.replace('\"','"')
-		foundInfo = True
+		#print(artist)
+		foundArtistInfo = True
 	else:
 		#print("no artist")
-		foundInfo = False
+		foundArtistInfo = False
 
 	for x in sourceCode:
 		if((x=="t" or x=="p") and sourceCode[it+1]=="4" and sourceCode[it+2]=="." and sourceCode[it+3]=="b" and sourceCode[it+4]=="c" and sourceCode[it+5]=="b"):
@@ -67,30 +72,36 @@ def main(argv):
 					track = track.replace("&lt;", '<')
 					track = track.replace("&gt;", '>')
 					track = track.replace("&amp;", '&')
-					foundInfo = True
+					foundTrackInfo = True
 				else:
-					#print("no track")
-					foundInfo = False
-				#print("Finding track info...")
-				# searchObj = re.search(r'{"play_count"(.*)"title":"(.*)"(.*)"track_num":(.*),(.*)"mp3-128":"https://'+re.escape(downUrl)+r'"', sourceCode, re.M|re.I)
-				# if searchObj:
-				# 	track  = searchObj.group(2).split('","')[0]
-				# 	trackNum =  searchObj.group(4).split(',"track_id"')[0]
-				# 	#print(trackNum+" "+ track)
-				# else:
-				# 	print("no track")
-				# 	foundInfo = 0
-				if foundInfo:
+					foundTrackInfo = False
+				if(not foundTrackInfo):
+					#print("Finding track info...")
+					#searchObj = re.search(r'{"play_count"(.*)"title":"(.*)"(.*)"track_num":(.*),(.*)"mp3-128":"https://'+re.escape(downUrl)+r'"', sourceCode, re.M|re.I) 
+					searchObj = re.search(r'trackinfo:(.*)"title":"(.*)"(.*)"track_num":(.*),(.*)"mp3-128":"https://'+re.escape(downUrl)+r'"', sourceCode, re.M|re.I)
+					if searchObj:
+						track  = searchObj.group(2).split('","')[0]
+						trackNum =  searchObj.group(4).split(',"')[0]
+						#print(trackNum+" "+ track)
+						foundTrackInfo = True
+					else:
+						foundTrackInfo = False
+				if foundArtistInfo:
 					audiofile.tag.artist = artist
+				if foundAlbumInfo:
 					audiofile.tag.album = album
+				if foundTrackInfo:
 					audiofile.tag.title = track
-					audiofile.tag.track_num = (trackNum, None)
-					audiofile.tag.save()
+					if(trackNum!="null"):
+						audiofile.tag.track_num = (trackNum, None)
+					else:
+						audiofile.tag.track_num = (1, None)
+				audiofile.tag.save()
 				#else:
 					#continue
 			
 			#print("Renamening file...")	
-			if(foundInfo):
+			if(foundTrackInfo):
 				name = audiofile.tag.title
 				if (len(name)>=248):
 					name = name[:-(len(name)-247)]
