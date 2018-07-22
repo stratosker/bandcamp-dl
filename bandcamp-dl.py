@@ -64,10 +64,11 @@ def main(argv):
 			if audiofile.tag is None:
 				audiofile.tag = eyed3.id3.Tag()
 				
-				searchObj = re.search(re.escape(trackNum) +r'\. (.*)', sourceCode, re.M|re.I)
+				searchObj = re.search(r'\n'+re.escape(trackNum) +r'\. (.*)', sourceCode, re.M|re.I)
 				if searchObj:
 					track = searchObj.group(1)
 					track = track.replace("&#39;", "'")
+					track = track.replace("&amp;#39;", "'")
 					track = track.replace("&quot;", '"')
 					track = track.replace("&lt;", '<')
 					track = track.replace("&gt;", '>')
