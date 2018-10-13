@@ -72,6 +72,7 @@ def main(argv):
 					track = track.replace("&quot;", '"')
 					track = track.replace("&lt;", '<')
 					track = track.replace("&gt;", '>')
+					track = track.replace("&amp;amp;", "&")
 					track = track.replace("&amp;", '&')
 					foundTrackInfo = True
 				else:
@@ -86,7 +87,14 @@ def main(argv):
 						#print(trackNum+" "+ track)
 						foundTrackInfo = True
 					else:
-						foundTrackInfo = False
+						searchObj = re.search(r'trackinfo:(.*)"title":"(.*)"(.*)"track_num":(.*),', sourceCode, re.M|re.I)
+						if searchObj:
+							track  = searchObj.group(2).split('","')[0]
+							trackNum =  searchObj.group(4).split(',"')[0]
+							#print(trackNum+" "+ track)
+							foundTrackInfo = True
+						else:
+							foundTrackInfo = False
 				if foundArtistInfo:
 					audiofile.tag.artist = artist
 				if foundAlbumInfo:
