@@ -9,11 +9,15 @@ Simple python script to download album or tracks from Bandcamp
 # Dependencies
 * python 3.4  
 * eyeD3  
-* pathlib  
+* pathlib 
+* python-magic-bin(For Windows users)
 
 Install eyeD3, pathlib by:  
 * sudo pip install eyeD3  
-* sudo pip install pathlib  
+* sudo pip install pathlib 
+
+For Windows use `python -m` before the command like the following:
+* `python -m pip install python-magic-bin`
 
 
 # Piracy

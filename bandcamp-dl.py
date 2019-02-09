@@ -105,6 +105,7 @@ def main(argv):
 						audiofile.tag.track_num = (trackNum, None)
 					else:
 						audiofile.tag.track_num = (1, None)
+				audiofile.tag.save(version=(1,None,None))
 				audiofile.tag.save()
 				#else:
 					#continue
