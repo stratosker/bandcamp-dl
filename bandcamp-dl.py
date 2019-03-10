@@ -117,6 +117,15 @@ def main(argv):
 					name = name[:-(len(name)-247)]
 				if "/" in name:
 					name = name.replace("/", "-")
+				if os.name == "nt":
+					name = name.replace("<", "")
+					name = name.replace(">", "")
+					name = name.replace(":", "")
+					name = name.replace("\"", "")
+					name = name.replace("\\", "")
+					name = name.replace("|", "")
+					name = name.replace("?", "")
+					name = name.replace("*", "")
 				if(len(str(audiofile.tag.track_num[0]))==1):	
 					os.rename(filename, "0"+str(audiofile.tag.track_num[0])+" "+name+".mp3")
 				else:
