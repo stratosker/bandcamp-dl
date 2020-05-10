@@ -4,6 +4,7 @@ import urllib.request
 import os
 import eyed3
 import re
+import datetime
 
 #Usage
 #python bandcamp-dl.py [album/track link]
@@ -43,6 +44,15 @@ def main(argv):
 	else:
 		#print("no artist")
 		foundArtistInfo = False
+	searchObj = re.search( r'album_release_date: "(.*)"', sourceCode, re.M|re.I)
+	if searchObj:
+		dateStr = searchObj.group(1)
+		dateStr = dateStr[7: len(dateStr)]
+		date_time_obj = datetime.datetime.strptime(dateStr, '%Y %H:%M:%S GMT')
+		year = date_time_obj.date().year
+		foundYearInfo = True
+	else:
+		foundYearInfo = False
 
 	for x in sourceCode:
 		if((x=="t" or x=="p") and sourceCode[it+1]=="4" and sourceCode[it+2]=="." and sourceCode[it+3]=="b" and sourceCode[it+4]=="c" and sourceCode[it+5]=="b"):
@@ -69,6 +79,7 @@ def main(argv):
 					track = searchObj.group(1)
 					track = track.replace("&#39;", "'")
 					track = track.replace("&amp;#39;", "'")
+					track = track.replace('&amp;quot;', '"')
 					track = track.replace("&quot;", '"')
 					track = track.replace("&lt;", '<')
 					track = track.replace("&gt;", '>')
@@ -87,10 +98,10 @@ def main(argv):
 						#print(trackNum+" "+ track)
 						foundTrackInfo = True
 					else:
-						searchObj = re.search(r'trackinfo:(.*)"title":"(.*)"(.*)"track_num":(.*),', sourceCode, re.M|re.I)
+						searchObj = re.search(r'trackinfo:(.*)"track_num":(.*),"title":"(.*)"(.*)', sourceCode, re.M|re.I)
 						if searchObj:
-							track  = searchObj.group(2).split('","')[0]
-							trackNum =  searchObj.group(4).split(',"')[0]
+							track  = searchObj.group(3).split('","')[0]
+							trackNum =  searchObj.group(2).split(',"')[0]
 							#print(trackNum+" "+ track)
 							foundTrackInfo = True
 						else:
@@ -105,8 +116,10 @@ def main(argv):
 						audiofile.tag.track_num = (trackNum, None)
 					else:
 						audiofile.tag.track_num = (1, None)
+				if foundYearInfo:
+					audiofile.tag.original_release_date = year
 				audiofile.tag.save(version=(1,None,None))
-				audiofile.tag.save()
+				audiofile.tag.save(version=eyed3.id3.ID3_DEFAULT_VERSION,encoding='utf-8')
 				#else:
 					#continue
 			
