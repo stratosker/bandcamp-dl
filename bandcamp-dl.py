@@ -22,6 +22,7 @@ def main(argv):
 	it = 0
 	
 	sourceCode = sourceCode.decode("utf8")
+	sourceCode = sourceCode.replace("&quot;", '"')
 
 	foundTrackInfo = True
 	foundArtistInfo = False
