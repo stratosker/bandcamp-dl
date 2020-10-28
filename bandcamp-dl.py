@@ -5,11 +5,32 @@ import os
 import eyed3
 import re
 import datetime
+import argparse
+import json
 
 #Usage
-#python bandcamp-dl.py [album/track link]
+#python bandcamp-dl.py album/track link [--artist ARTIST] [--album ALBUM]
 
 def main(argv): 
+	foundTrackInfo = False
+	foundArtistInfo = False
+	foundAlbumInfo = False
+
+	parser = argparse.ArgumentParser(description='Album link and metadata')
+	parser.add_argument('link')
+	parser.add_argument('--artist', dest='artist', type=str, help='Artist')
+	parser.add_argument('--album', dest='album', type=str, help='Album')
+
+	args = parser.parse_args()
+	if args.artist:
+		artist = args.artist
+		foundArtistInfo = True
+
+	if args.album:
+		album = args.album
+		foundAlbumInfo = True
+	
+
 	folderName = input("Enter the folder name where the files will be saved(enter . for current directory): ")
 	if(folderName!="."):
 		if (os.path.isdir(folderName) == False):
@@ -24,36 +45,35 @@ def main(argv):
 	sourceCode = sourceCode.decode("utf8")
 	sourceCode = sourceCode.replace("&quot;", '"')
 
-	foundTrackInfo = True
-	foundArtistInfo = False
-	foundAlbumInfo = False
-	searchObj = re.search( r'album_title(.*): "(.*)"', sourceCode, re.M|re.I)
+	searchObj = re.search( r'<script type="application/ld\+json">\n(.*)', sourceCode, re.M|re.I)
+
 	if searchObj:
-		album = searchObj.group(2)
-		album = album.replace('\"','"')
-		#print(album)
-		foundAlbumInfo = True
-	else:
-		#print("no album")
-		foundAlbumInfo = False
-	searchObj = re.search( r'artist: "(.*)"', sourceCode, re.M|re.I)
-	if searchObj:
-		artist = searchObj.group(1)
-		artist = artist.replace('\"','"')
-		#print(artist)
-		foundArtistInfo = True
-	else:
-		#print("no artist")
-		foundArtistInfo = False
-	searchObj = re.search( r'album_release_date: "(.*)"', sourceCode, re.M|re.I)
-	if searchObj:
-		dateStr = searchObj.group(1)
-		dateStr = dateStr[7: len(dateStr)]
-		date_time_obj = datetime.datetime.strptime(dateStr, '%Y %H:%M:%S GMT')
-		year = date_time_obj.date().year
-		foundYearInfo = True
-	else:
-		foundYearInfo = False
+		jsonInf = searchObj.group(1)
+		albumInfo = json.loads(jsonInf)
+
+		if not foundArtistInfo :
+			if "byArtist" in albumInfo and "name" in albumInfo["byArtist"]:
+				artist = albumInfo["byArtist"]["name"]
+				foundArtistInfo = True
+			else:
+				foundArtistInfo = False
+
+		if not foundAlbumInfo:
+			if "name" in albumInfo:
+				album = albumInfo["name"]
+				foundAlbumInfo = True
+			else:
+				foundAlbumInfo = False
+
+		if "datePublished" in albumInfo:
+			dateStr = albumInfo["datePublished"]
+			dateStr = dateStr[7: len(dateStr)]
+			date_time_obj = datetime.datetime.strptime(dateStr, '%Y %H:%M:%S GMT')
+			year = date_time_obj.date().year
+			foundYearInfo = True
+		else:
+			foundYearInfo = False
+
 
 	for x in sourceCode:
 		if((x=="t" or x=="p") and sourceCode[it+1]=="4" and sourceCode[it+2]=="." and sourceCode[it+3]=="b" and sourceCode[it+4]=="c" and sourceCode[it+5]=="b"):
@@ -89,27 +109,12 @@ def main(argv):
 					foundTrackInfo = True
 				else:
 					foundTrackInfo = False
-				if(not foundTrackInfo):
-					#print("Finding track info...")
-					#searchObj = re.search(r'{"play_count"(.*)"title":"(.*)"(.*)"track_num":(.*),(.*)"mp3-128":"https://'+re.escape(downUrl)+r'"', sourceCode, re.M|re.I) 
-					searchObj = re.search(r'trackinfo:(.*)"title":"(.*)"(.*)"track_num":(.*),(.*)"mp3-128":"https://'+re.escape(downUrl)+r'"', sourceCode, re.M|re.I)
-					if searchObj:
-						track  = searchObj.group(2).split('","')[0]
-						trackNum =  searchObj.group(4).split(',"')[0]
-						#print(trackNum+" "+ track)
-						foundTrackInfo = True
-					else:
-						searchObj = re.search(r'trackinfo:(.*)"track_num":(.*),"title":"(.*)"(.*)', sourceCode, re.M|re.I)
-						if searchObj:
-							track  = searchObj.group(3).split('","')[0]
-							trackNum =  searchObj.group(2).split(',"')[0]
-							#print(trackNum+" "+ track)
-							foundTrackInfo = True
-						else:
-							foundTrackInfo = False
+				
 				if foundArtistInfo:
+					artist = artist.replace('\"','"')
 					audiofile.tag.artist = artist
 				if foundAlbumInfo:
+					album = album.replace('\"','"')
 					audiofile.tag.album = album
 				if foundTrackInfo:
 					audiofile.tag.title = track
