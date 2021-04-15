@@ -39,8 +39,6 @@ def main(argv):
 	with urllib.request.urlopen(sys.argv[1]) as response:
 		sourceCode = response.read()
 	print(("Downloading "+sys.argv[1])) 
-	fileName = 0
-	it = 0
 	
 	sourceCode = sourceCode.decode("utf8")
 	sourceCode = sourceCode.replace("&quot;", '"')
@@ -51,7 +49,35 @@ def main(argv):
 		jsonInf = searchObj.group(1)
 		albumInfo = json.loads(jsonInf)
 
-		if not foundArtistInfo :
+		tracksArr = []
+		if "numTracks" in albumInfo:
+			for track in range(albumInfo["numTracks"]):
+				trackInfo = {}
+				trackInfo["trackName"] = albumInfo["track"]["itemListElement"][track]["item"]["name"]
+				additionalInfos = albumInfo["track"]["itemListElement"][track]["item"]["additionalProperty"]
+				for info in additionalInfos:
+					if ("name" in info and info["name"] == "file_mp3-128"):
+						trackInfo["trackLink"] = (info["value"])
+					if ("name" in info and info["name"] == "tracknum"):
+						trackInfo["trackNum"] = (info["value"])
+				
+				tracksArr.append(trackInfo)
+			foundTrackInfo = True
+		elif "additionalProperty" in albumInfo:
+		#info for single track
+			trackInfo = {}
+			additionalInfos = albumInfo["additionalProperty"]
+			for info in additionalInfos:
+				if ("name" in info and info["name"] == "file_mp3-128"):
+					trackInfo["trackLink"] = (info["value"])
+			trackInfo["trackNum"] = 1
+			if "name" in albumInfo:
+				trackInfo["trackName"] = albumInfo["name"]
+			tracksArr.append(trackInfo)
+			foundTrackInfo = True
+
+
+		if not foundArtistInfo:
 			if "byArtist" in albumInfo and "name" in albumInfo["byArtist"]:
 				artist = albumInfo["byArtist"]["name"]
 				foundArtistInfo = True
@@ -74,83 +100,57 @@ def main(argv):
 		else:
 			foundYearInfo = False
 
+	tracksCnt = 0
+	for track in tracksArr:
+		print("Downloading track...")
+		tracksCnt+=1
+		filename = str(tracksCnt) + ".mp3"
 
-	for x in sourceCode:
-		if((x=="t" or x=="p") and sourceCode[it+1]=="4" and sourceCode[it+2]=="." and sourceCode[it+3]=="b" and sourceCode[it+4]=="c" and sourceCode[it+5]=="b"):
-			it2 = it
-			downUrl = ""
-			fileName += 1
-			while sourceCode[it2]!='"':
-				downUrl+=str(sourceCode[it2])
-				it2 = it2+1
-			#r = requests.get("http://"+downUrl, allow_redirects=False)
-			#req = urllib.request.Request(downUrl, datagen, headers)
-			#print (r.headers['Location'])
-			print("downloading track...")
-			#urllib.request.urlretrieve(r.headers['Location'], str(fileName)+".mp3")
-			urllib.request.urlretrieve ("http://"+downUrl, str(fileName)+".mp3")
-			filename = str(fileName)+".mp3"
-			trackNum  = filename.split('.mp3')[0]
-			audiofile = eyed3.load(filename)
-			if audiofile.tag is None:
-				audiofile.tag = eyed3.id3.Tag()
-				
-				searchObj = re.search(r'\n'+re.escape(trackNum) +r'\. (.*)', sourceCode, re.M|re.I)
-				if searchObj:
-					track = searchObj.group(1)
-					track = track.replace("&#39;", "'")
-					track = track.replace("&amp;#39;", "'")
-					track = track.replace('&amp;quot;', '"')
-					track = track.replace("&quot;", '"')
-					track = track.replace("&lt;", '<')
-					track = track.replace("&gt;", '>')
-					track = track.replace("&amp;amp;", "&")
-					track = track.replace("&amp;", '&')
-					foundTrackInfo = True
-				else:
-					foundTrackInfo = False
-				
-				if foundArtistInfo:
-					artist = artist.replace('\"','"')
-					audiofile.tag.artist = artist
-				if foundAlbumInfo:
-					album = album.replace('\"','"')
-					audiofile.tag.album = album
-				if foundTrackInfo:
-					audiofile.tag.title = track
-					if(trackNum!="null"):
-						audiofile.tag.track_num = (trackNum, None)
-					else:
-						audiofile.tag.track_num = (1, None)
-				if foundYearInfo:
-					audiofile.tag.original_release_date = year
-				audiofile.tag.save(version=(1,None,None))
-				audiofile.tag.save(version=eyed3.id3.ID3_DEFAULT_VERSION,encoding='utf-8')
-				#else:
-					#continue
+		urllib.request.urlretrieve (track["trackLink"], filename)
+
+		audiofile = eyed3.load(filename)
+
+		if audiofile.tag is None:
+			audiofile.tag = eyed3.id3.Tag()
 			
-			#print("Renamening file...")	
-			if(foundTrackInfo):
-				name = audiofile.tag.title
-				if (len(name)>=248):
-					name = name[:-(len(name)-247)]
-				if "/" in name:
-					name = name.replace("/", "-")
-				if os.name == "nt":
-					name = name.replace("<", "")
-					name = name.replace(">", "")
-					name = name.replace(":", "")
-					name = name.replace("\"", "")
-					name = name.replace("\\", "")
-					name = name.replace("|", "")
-					name = name.replace("?", "")
-					name = name.replace("*", "")
-				if(len(str(audiofile.tag.track_num[0]))==1):	
-					os.rename(filename, "0"+str(audiofile.tag.track_num[0])+" "+name+".mp3")
+			if foundArtistInfo:
+				artist = artist.replace('\"','"')
+				audiofile.tag.artist = artist
+			if foundAlbumInfo:
+				album = album.replace('\"','"')
+				audiofile.tag.album = album
+			if foundTrackInfo:
+				audiofile.tag.title = track["trackName"]
+				if(track["trackNum"]!="null"):
+					audiofile.tag.track_num = (track["trackNum"], None)
 				else:
-					os.rename(filename, str(audiofile.tag.track_num[0])+" "+name+".mp3")
-		it=it+1
+					audiofile.tag.track_num = (1, None)
+			if foundYearInfo:
+				audiofile.tag.original_release_date = year
+			audiofile.tag.save(version=(1,None,None))
+			audiofile.tag.save(version=eyed3.id3.ID3_DEFAULT_VERSION,encoding='utf-8')
 
+		if track["trackNum"] < 10:	
+			newFilename = "0"+str(track["trackNum"])+" "+track["trackName"]+".mp3"
+		else:
+			newFilename = str(track["trackNum"])+" "+track["trackName"]+".mp3"
+
+		if (len(newFilename)>=248):
+			newFilename = newFilename[:-(len(newFilename)-247)]
+
+		if "/" in newFilename:
+				newFilename = newFilename.replace("/", "-")
+		if os.name == "nt":
+			newFilename = newFilename.replace("<", "")
+			newFilename = newFilename.replace(">", "")
+			newFilename = newFilename.replace(":", "")
+			newFilename = newFilename.replace("\"", "")
+			newFilename = newFilename.replace("\\", "")
+			newFilename = newFilename.replace("|", "")
+			newFilename = newFilename.replace("?", "")
+			newFilename = newFilename.replace("*", "")
+		os.rename(filename, newFilename)
+		
 	searchObj = re.search( r'<link rel="image_src" href="(.*)">', sourceCode, re.M|re.I)
 	if searchObj:
 		cover = searchObj.group(1)
