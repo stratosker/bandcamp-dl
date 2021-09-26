@@ -54,14 +54,16 @@ def main(argv):
 			for track in range(albumInfo["numTracks"]):
 				trackInfo = {}
 				trackInfo["trackName"] = albumInfo["track"]["itemListElement"][track]["item"]["name"]
+				trackIsDownloadable = False
 				additionalInfos = albumInfo["track"]["itemListElement"][track]["item"]["additionalProperty"]
 				for info in additionalInfos:
 					if ("name" in info and info["name"] == "file_mp3-128"):
 						trackInfo["trackLink"] = (info["value"])
+						trackIsDownloadable = True
 					if ("name" in info and info["name"] == "tracknum"):
 						trackInfo["trackNum"] = (info["value"])
-				
-				tracksArr.append(trackInfo)
+				if trackIsDownloadable:
+					tracksArr.append(trackInfo)
 			foundTrackInfo = True
 		elif "additionalProperty" in albumInfo:
 		#info for single track
